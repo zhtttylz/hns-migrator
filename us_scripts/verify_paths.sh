@@ -2,12 +2,6 @@
 
 set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <new-cluster>" >&2
-  exit 1
-fi
-
-new_cluster=$1
 script_dir="$(dirname "$0")"
 input_file="$script_dir/hdfs_owners.log"
 
@@ -29,7 +23,7 @@ for ((i=0; i<limit; i++)); do
   owner=$(echo "$line" | awk '{print $2}')
   group=$(echo "$line" | awk '{print $3}')
   # 这里固定为美东
-  target=$(echo "$path" | sed "s/DClusterUS1/$new_cluster/g")
+  target=$(echo "$path" | sed "s/DClusterUS1/DClusterUS2/g")
 
   if ! hadoop fs -ls -d "$target" >/dev/null 2>&1; then
     echo "hadoop fs -mkdir $target"
