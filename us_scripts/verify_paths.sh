@@ -20,7 +20,7 @@ mapfile -t lines < "$input_file"
 
 # 仅仅处理到表前面路径这一层级
 # 如表路径为"hdfs://DClusterUS1/user/growth_data/growth_data/hive/growth_data/dwd_ut_log_resource_zhunxing_req_issue_di"
-# 只校验到 “hdfs://DClusterUS2/user/growth_data/growth_data/hive/growth_data/”
+# 只校验到 “hdfs://DClusterUS2/user/growth_data/growth_data/hive/growth_data”
 limit=$((${#lines[@]} - 1))
 
 for ((i=0; i<limit; i++)); do
@@ -28,7 +28,7 @@ for ((i=0; i<limit; i++)); do
   path=$(echo "$line" | awk '{print $1}')
   owner=$(echo "$line" | awk '{print $2}')
   group=$(echo "$line" | awk '{print $3}')
-  # 这里写死美东
+  # 这里固定为美东
   target=$(echo "$path" | sed "s/DClusterUS1/$new_cluster/g")
 
   if ! hadoop fs -ls -d "$target" >/dev/null 2>&1; then
