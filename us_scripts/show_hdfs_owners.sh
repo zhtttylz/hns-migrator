@@ -19,7 +19,17 @@ IFS='/' read -ra parts <<< "$path_without_prefix"
 output_file="$(dirname "$0")/hdfs_owners.log"
 : > "$output_file"
 
+# Output the root of the cluster first
+if [ -n "$prefix" ]; then
+  info=$(hadoop fs -ls -d "$prefix" 2>/dev/null)
+  owner=$(echo "$info" | awk '{print $3}')
+  group=$(echo "$info" | awk '{print $4}')
+  echo "$prefix $owner $group" | tee -a "$output_file"
+fi
+
 for part in "${parts[@]}"; do
+  # Skip empty segments to avoid duplicate slashes
+  [ -z "$part" ] && continue
   current="$current/$part"
   target="${prefix}${current}"
   info=$(hadoop fs -ls -d "$target" 2>/dev/null)
