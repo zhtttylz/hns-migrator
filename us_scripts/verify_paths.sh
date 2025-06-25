@@ -32,9 +32,17 @@ for ((i=0; i<limit; i++)); do
 done
 
 last_line=$(tail -n 1 "$input_file")
+
+#取hdfs_owners.log中的倒数第二行（库这一级别）的owner和group，作为ns2这一层级的owner和group
+second_last_line=$(tail -n 2 "$input_file" | head -n 1)
+
+
 path=$(echo "$last_line" | awk '{print $1}')
 owner=$(echo "$last_line" | awk '{print $2}')
 group=$(echo "$last_line" | awk '{print $3}')
+
+base_owner=$(echo "$second_last_line" | awk '{print $2}')
+base_group=$(echo "$second_last_line" | awk '{print $3}')
 
 target_ns2=$(echo "$path" | sed "s/DClusterUS1/DClusterUS2/g")
 base_dir=$(dirname "$target_ns2")
@@ -45,7 +53,7 @@ ns2_path="$ns2_base/$table_name"
 echo "===================================================="
 if ! hadoop fs -ls -d "$ns2_base" >/dev/null 2>&1; then
   echo "hadoop fs -mkdir $ns2_base"
-  echo "hadoop fs -chown $owner:$group $ns2_base"
+  echo "hadoop fs -chown $base_owner:$base_group $ns2_base"
 fi
 
 echo "===================================================="
