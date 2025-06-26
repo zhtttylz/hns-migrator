@@ -9,6 +9,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 table=$1
+table_name=${table##*.}
 
 # 获取表的 location
 TABLE_LOC=$(spark-sql --master local -e "DESC FORMATTED $table" 2>/dev/null | grep -i '^Location' | awk '{print $2}')
@@ -17,8 +18,6 @@ if [ -z "$TABLE_LOC" ]; then
   exit 1
 fi
 
-BASE_DIR=$(dirname "$TABLE_LOC")
-NEW_BASE_DIR=${BASE_DIR/DClusterUS1/DClusterUS2}
 
 # 查询所有分区，将其放入数组，并打印分区数量
 # 去除show partition时，打印的”partition“ 字段
@@ -29,7 +28,7 @@ for part in "${parts[@]}"; do
   # 将 part 形如 k=v/k2=v2 转为 k='v', k2='v2'
   spec=$(echo "$part" | sed 's#/#, #g' | sed "s/=\([^,]*\)/='\1'/g")
   echo "扫描分区${spec}对应的分区路径"
-  loc=$(spark-sql --master local -e "DESC FORMATTED $table PARTITION ($spec)" 2>/dev/null | grep -i '^Location' | awk '{print $2}')
+  loc=$(spark-sql --master local -e "DESC FORMATTED $table PARTITION ($spec)" 2>/dev/null | grep -i '^Location' | awk '{print $2}' |grep -v -i 'DClusterUS2')
   echo "${spec}的分区路径为${loc}"
   if [[ -z "$loc" ]]; then
     echo "Skip partition $part: cannot get location" >&2
@@ -41,11 +40,9 @@ for part in "${parts[@]}"; do
     continue
   fi
 
-  rest=${loc#"${BASE_DIR}/"}
-  if [[ $rest == ns2/* ]]; then
-    new_loc="$NEW_BASE_DIR/$rest"
-  else
-    new_loc="$NEW_BASE_DIR/ns2/$rest"
+  new_loc=${loc/DClusterUS1/DClusterUS2}
+  if [[ $new_loc != */ns2/${table_name}/* ]]; then
+    new_loc=${new_loc/"/${table_name}/"/"/ns2/${table_name}/"}
   fi
 
   echo "ALTER TABLE $table PARTITION ($spec) SET LOCATION '$new_loc';"
