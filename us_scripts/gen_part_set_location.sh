@@ -26,8 +26,8 @@ mapfile -t parts < <(spark-sql --master local -e "SHOW PARTITIONS $table" 2>/dev
 echo "总共 ${#parts[@]} 个分区"
 
 for part in "${parts[@]}"; do
-  # 将 part 形如 k=v/k2=v2 转为 k=v,k2=v2
-  spec=$(echo "$part" | sed 's#/#, #g')
+  # 将 part 形如 k=v/k2=v2 转为 k='v', k2='v2'
+  spec=$(echo "$part" | sed 's#/#, #g' | sed "s/=\([^,]*\)/='\1'/g")
   echo "扫描分区${spec}对应的分区路径"
   loc=$(spark-sql --master local -e "DESC FORMATTED $table PARTITION ($spec)" 2>/dev/null | grep -i '^Location' | awk '{print $2}')
   echo "${spec}的分区路径为${loc}"
